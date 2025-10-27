@@ -1,7 +1,0 @@
-DISPLAY_NAME=DownTorrentsGames
-DESCRIPTION=bot discord
-MAIN=index.js
-MEMORY=500
-VERSION=recommended
-LANGUAGE=node
-APPID=c85cd732-a4f9-46ac-a85e-90a5a7c0e46f
