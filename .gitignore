@@ -5,3 +5,7 @@ node_modules
 
 # Ignorar arquivo de variáveis de ambiente
 .env
+
+
+.deps_cache
+.shardcloud
