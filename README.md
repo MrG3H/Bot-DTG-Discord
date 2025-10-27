@@ -41,17 +41,19 @@ Para hospedar e rodar sua própria instância deste bot, siga os passos abaixo.
     ```
 
 4.  **Inicie o bot:**
-    * `[node . ou pode ser usado o node index.js]`
+    * `[utilizando "node ." ou pode ser usado o "node index.js"]`
 
 ## 🎮 Comandos Principais
 
 Aqui estão alguns dos comandos que os usuários e administradores podem usar:
 
-* `/anuncio [mensagem]` - Cria um novo anúncio. O bot traduz e envia em PT-BR e EN.
-* `/pedido` - Abre um formulário para o usuário fazer um novo pedido de jogo ou software.
-* `/publicar [tipo] [nome] [link]` - Adiciona um novo jogo ou software ao catálogo do servidor.
-
-*(**Nota:** Altere os comandos acima para refletir os comandos reais do seu bot.)*
+* `/dtg aviso ` - Cria um novo anúncio. O bot traduz e envia em PT-BR e EN.
+* `/dtg addpedido` - Abre um formulário para o usuário fazer um novo pedido de jogo ou software.
+* `/dtg addjogo` - Adiciona um novo jogo ao catálogo do servidor com aviso automatico em anuncio configurado manualmente..
+* `/dtg addsoft` - Adiciona um novo software ao catálogo do servidor com aviso automatico em anuncio configurado manualmente..
+* `/dtg ajuda` - Mostra todos os comandos disponíveis no bot DTG
+* `/dtg limpar` - Limpeza do chat onde ele vai perguntar a quantidade de dia semanas meses ou tudo
+* `/dtg convite` - Mostra um convite automatico do server.
 
 ## 💻 Tecnologias Utilizadas
 
