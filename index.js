@@ -8,7 +8,7 @@ const {
     Client, GatewayIntentBits, EmbedBuilder, ActivityType, ModalBuilder,
     TextInputBuilder, TextInputStyle, ActionRowBuilder, Collection,
     PermissionFlagsBits, MessageFlags, StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder, ButtonBuilder, ButtonStyle, ComponentType,
+    StringSelectMenuOptionBuilder, ButtonBuilder, ButtonStyle, ComponentType, OverwriteType,
     ChannelType
 } = require('discord.js');
 
@@ -65,6 +65,7 @@ client.tempPedidoData = new Collection();
 client.tempAvisoData = new Collection();
 client.tempAddJogoData = new Collection(); // Coleção para dados de addjogo/addsoft aguardando imagem
 
+client.ticketSessions = new Collection(); // Coleção para sessões de chat privado (userId <-> threadId)
 client.on('clientReady', () => { // CORREÇÃO: Usando 'clientReady' em vez de 'ready'
     console.log(`Bot ${client.user.tag} está online!`);
     const activities = ['Melhor Discord de Jogos e Software', 'Criado por MrGeH!', 'Siga as Regras!', 'Ainda sendo desenvolvido!', 'Best Discord for Games and Software', 'Created by MrGeH!', 'Follow the Rules!', 'Still under development!'];
@@ -77,6 +78,23 @@ client.on('clientReady', () => { // CORREÇÃO: Usando 'clientReady' em vez de '
 
 client.on('messageCreate', async message => {
     if (message.author.bot) return; // Não processar mensagens de bots
+
+    // LÓGICA PARA RELÉ DE MENSAGEM (DM -> THREAD)
+    if (message.channel.type === ChannelType.DM) {
+        // Verifica se há uma sessão de ticket ativa para este usuário
+        const threadId = client.ticketSessions.get(message.author.id);
+        if (threadId) {
+            try {
+                const thread = await client.channels.fetch(threadId);
+                if (thread && !thread.archived) {
+                    await thread.send(`**${message.author.username}:** ${message.content}`);
+                    await message.react('✅'); // Reage na DM do usuário para confirmar o envio
+                }
+            } catch (error) {
+                console.error("Erro ao encaminhar DM para a thread:", error);
+            }
+        }
+    }
 
     // LÓGICA PARA COLETAR IMAGEM APÓS MODAL DE ADDJOGO/ADDSOFT
     if (client.tempAddJogoData.has(message.author.id)) {
@@ -122,6 +140,22 @@ client.on('messageCreate', async message => {
     }
 
     // LÓGICA PARA COMANDOS DE PREFIXO (SE A MENSAGEM NÃO FOI UMA IMAGEM PARA ADDJOGO)
+    // E LÓGICA PARA RELÉ DE MENSAGEM (THREAD -> DM)
+    if (message.guild) {
+        const userId = client.ticketSessions.get(message.channel.id);
+        if (userId && message.author.id !== client.user.id) { // Se a mensagem for em um canal de ticket e não for do bot
+            try {
+                const user = await client.users.fetch(userId);
+                await user.send(`**${message.author.username} (Admin):** ${message.content}`);
+                await message.react('✅'); // Reage na mensagem da thread para confirmar o envio
+                return; // Impede que continue para a lógica de prefixo
+            } catch (error) {
+                console.error("Erro ao encaminhar mensagem da thread para DM:", error);
+                await message.channel.send('❌ Falha ao enviar a mensagem para o usuário. Ele pode ter bloqueado as DMs.');
+            }
+        }
+    }
+
     if (!message.content.startsWith(PREFIX)) return;
     if (!message.guild) return message.reply('Este comando só pode ser usado em um servidor.').catch(console.error);
 
@@ -198,7 +232,7 @@ client.on('interactionCreate', async interaction => {
                 cooldowns.set(userId, now + cooldownAmount);
                 setTimeout(() => cooldowns.delete(userId), cooldownAmount);
 
-                const gifUrl = 'https://media.discordapp.net/attachments/1132735302163779725/1425212324100309084/DTG.gif';
+                const gifUrl = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHgwY3kxM3ByYW9qY2tnYmVrN2k2Zm9weTBzMGlhNnV5d2x2dnVsdiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/vqGMs1Sgv0y5gnbkMP/giphy.gif';
 
                 const inviteMessage = `**🇧🇷 Quer convidar um amigo?** ❤️\nEntre na nossa comunidade! Vários jogos e softwares para baixar e você também pode fazer o seu pedido!\n**Entre na DownTorrentsGames!!!**\n\n**🇺🇸 Want to invite a friend?** ❤️\nJoin our community! Several games e software to download and you can also place your order!\n**Join DownTorrentsGames!!!**\n\nhttps://discord.gg/uKCrBCNqCT`;
 
@@ -258,7 +292,7 @@ client.on('interactionCreate', async interaction => {
 
                 const presentationMessagePT = `**🇧🇷 Faça o Pedido do seu JOGO ou SOFTWARE clicando no botão abaixo:**`;
                 const presentationMessageEN = `**🇺🇸 Make your GAME or SOFTWARE request by clicking the button below:**`;
-                const gifUrl = 'https://media.discordapp.net/attachments/1132735302163779725/1425212324100309084/DTG.gif';
+                const gifUrl = 'https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHgwY3kxM3ByYW9qY2tnYmVrN2k2Zm9weTBzMGlhNnV5d2x2dnVsdiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/vqGMs1Sgv0y5gnbkMP/giphy.gif';
 
                 const buttons = new ActionRowBuilder()
                     .addComponents(
@@ -310,11 +344,19 @@ client.on('interactionCreate', async interaction => {
                 return interaction.reply({ content: isEnglish ? '❌ Please select both platform and online options first.' : '❌ Por favor, selecione a plataforma e a opção online primeiro.', flags: [MessageFlags.Ephemeral] }); // CORREÇÃO: ephemeral
             }
             
+            // Primeiro, abre o modal. Esta é a resposta principal à interação do botão.
             await handlePedidoModalFinal(interaction, userData.platform, userData.online, isEnglish);
 
-            // A deleção da mensagem efêmera é feita *depois* do modal ser submetido com sucesso.
-            // A função handlePedidoModalFinal (agora alterada) será responsável por isso.
-            // Não precisamos deletar aqui, pois a submissão do modal terá a responsabilidade.
+            // Desabilita o botão "Continuar" para prevenir cliques múltiplos
+            // Isso é feito *após* o modal ser aberto, editando a mensagem original.
+            try {
+                const disabledContinueButton = ButtonBuilder.from(interaction.component).setDisabled(true);
+                const actionRow = new ActionRowBuilder().addComponents(disabledContinueButton);
+                // Edita a mensagem efêmera original para desabilitar o botão
+                await interaction.message.edit({ components: [interaction.message.components[0], interaction.message.components[1], actionRow] });
+            } catch (error) {
+                console.error("Não foi possível desabilitar o botão 'Continuar Pedido' após abrir o modal.", error);
+            }
         }
         else if (interaction.customId.startsWith('pedido_added_') || interaction.customId.startsWith('pedido_rejected_')) { // Tratamento dos botões de aprovação/rejeição
             if (interaction.user.id !== OWNER_ID) {
@@ -386,6 +428,72 @@ client.on('interactionCreate', async interaction => {
                 // CORREÇÃO: Tradução da mensagem de erro de DM
                 await interaction.followUp({ content: `❌ ${isEnglish ? 'Failed to send DM to user (they might have DMs disabled?). Action logged.' : 'Falha ao enviar DM para o usuário (talvez ele tenha DMs desabilitadas?). Ação registrada.'}`, flags: [MessageFlags.Ephemeral] }); // CORREÇÃO: ephemeral
             }
+        } else if (interaction.customId.startsWith('pedido_start_chat_')) {
+            if (interaction.user.id !== OWNER_ID) {
+                return interaction.reply({ content: '❌ Apenas o dono do servidor pode iniciar um chat.', flags: [MessageFlags.Ephemeral] });
+            }
+
+            await interaction.deferReply({ ephemeral: true });
+
+            const parts = interaction.customId.split('_');
+            const userId = parts[3];
+            const userName = parts[4];
+
+            // Verifica se já existe uma sessão
+            if (client.ticketSessions.has(userId)) {
+                const existingThreadId = client.ticketSessions.get(userId);
+                return interaction.editReply(`❌ Já existe um chat ativo com este usuário na thread <#${existingThreadId}>.`);
+            }
+
+            try {
+                const user = await client.users.fetch(userId);
+                const thread = await interaction.message.startThread({
+                    name: `Chat - ${userName}`,
+                    autoArchiveDuration: 1440, // 24 horas
+                    reason: `Chat de suporte para o pedido de ${userName}`
+                });
+
+                // Armazena a sessão
+                client.ticketSessions.set(userId, thread.id);
+                client.ticketSessions.set(thread.id, userId);
+
+                const endChatButton = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`end_chat_${thread.id}_${userId}`)
+                        .setLabel('Finalizar Chat')
+                        .setStyle(ButtonStyle.Danger)
+                );
+
+                await thread.send({ content: `Chat iniciado com **${userName}** (ID: ${userId}).\nUse este canal para se comunicar. As mensagens serão encaminhadas para o privado do usuário.`, components: [endChatButton] });
+                await user.send('Olá! Um administrador iniciou um chat privado com você para falar sobre seu pedido. Você pode responder diretamente aqui.');
+
+                await interaction.editReply(`✅ Chat iniciado com sucesso na thread <#${thread.id}>.`);
+
+            } catch (error) {
+                console.error("Erro ao iniciar o chat:", error);
+                await interaction.editReply('❌ Ocorreu um erro ao tentar iniciar o chat. O usuário pode ter DMs desabilitadas.');
+            }
+        } else if (interaction.customId.startsWith('end_chat_')) {
+            if (interaction.user.id !== OWNER_ID) {
+                return interaction.reply({ content: '❌ Apenas o dono do servidor pode finalizar um chat.', flags: [MessageFlags.Ephemeral] });
+            }
+            await interaction.deferReply({ ephemeral: true });
+
+            // Desabilita o botão "Finalizar Chat" para evitar cliques múltiplos
+            try {
+                const disabledButton = ButtonBuilder.from(interaction.component).setDisabled(true);
+                await interaction.message.edit({ components: [new ActionRowBuilder().addComponents(disabledButton)] });
+            } catch (error) {
+                // Se a mensagem já foi deletada ou algo deu errado, apenas loga e continua.
+                // A funcionalidade principal de fechar o chat não deve ser interrompida.
+                console.error("Não foi possível desabilitar o botão de finalizar chat. Prosseguindo com o fechamento.", error);
+            }
+
+            const parts = interaction.customId.split('_');
+            const threadId = parts[2];
+            const userId = parts[3];
+
+            await handleEndChat(interaction, threadId, userId);
         }
     }
     else if (interaction.isModalSubmit()) {
@@ -423,13 +531,18 @@ client.on('interactionCreate', async interaction => {
             const buttons = new ActionRowBuilder()
                 .addComponents(
                     new ButtonBuilder()
-                        .setCustomId(`pedido_added_${userId}_${gameSoftwareName.replace(/ /g, '_')}_${platform.replace(/ /g, '_')}_${onlineStatus.replace(/ /g, '_')}_${lang}`)
+                        .setCustomId(`pedido_added_${userId}_${gameSoftwareName.replace(/ /g, '_')}_${platform}_${onlineStatus}_${lang}`)
                         .setLabel(isEnglish ? 'Mark as Added' : 'Marcar como Adicionado')
                         .setStyle(ButtonStyle.Success),
                     new ButtonBuilder()
-                        .setCustomId(`pedido_rejected_${userId}_${gameSoftwareName.replace(/ /g, '_')}_${platform.replace(/ /g, '_')}_${onlineStatus.replace(/ /g, '_')}_${lang}`)
+                        .setCustomId(`pedido_rejected_${userId}_${gameSoftwareName.replace(/ /g, '_')}_${platform}_${onlineStatus}_${lang}`)
                         .setLabel(isEnglish ? 'Mark as No Crack' : 'Marcar como Sem Crack')
                         .setStyle(ButtonStyle.Danger),
+                    new ButtonBuilder()
+                        .setCustomId(`pedido_start_chat_${userId}_${interaction.user.username.replace(/ /g, '_')}`)
+                        .setLabel('Enviar Mensagem')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setEmoji('✉️')
                 );
             await logChannel.send({ embeds: [embedPedido], components: [buttons] });
             await interaction.editReply({ content: isEnglish ? '✅ Your request has been successfully submitted!' : '✅ Seu pedido foi enviado com sucesso!', flags: [MessageFlags.Ephemeral] }); // CORREÇÃO: ephemeral
@@ -524,6 +637,7 @@ client.on('interactionCreate', async interaction => {
                 .setTitle(avisoTitulo)
                 .setDescription(avisoCorpo)
                 .setColor(getRandomColor())
+                .setThumbnail('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExeHgwY3kxM3ByYW9qY2tnYmVrN2k2Zm9weTBzMGlhNnV5d2x2dnVsdiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/vqGMs1Sgv0y5gnbkMP/giphy.gif') // Adiciona o GIF do servidor como miniatura
                 .setTimestamp()
                 .setFooter({ text: isEnglish ? `Announcement by ${interaction.user.tag}` : `Aviso por ${interaction.user.tag}` });
 
@@ -531,7 +645,7 @@ client.on('interactionCreate', async interaction => {
                 try {
                     const channel = await client.channels.fetch(channelId);
                     if (channel && [ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type)) {
-                        await channel.send({ content: '@here', embeds: [embedAviso] });
+                        await channel.send({ content: '@everyone', embeds: [embedAviso] });
                     }
                 } catch (error) {
                     console.error(`Erro ao enviar aviso para o canal ${channelId}:`, error);
@@ -635,69 +749,34 @@ async function handleAjudaSlash(interaction) {
 }
 
 async function handleAvisoChat(interaction) {
-    const isEnglish = interaction.options.getSubcommand() === 'order'; // Pode ser usado se 'aviso' tiver uma opção de idioma ou basear no comando pai
+    // O idioma será definido como padrão (pt-BR), pois o comando não tem variação de idioma.
+    const isEnglish = false; 
 
-    // Defer a resposta efêmera inicial
-    await interaction.deferReply({ flags: [MessageFlags.Ephemeral] });
+    // Pega o canal diretamente das opções do comando.
+    const channel = interaction.options.getChannel('canal');
 
-    // Crie o seletor de canais
-    const channelSelect = new StringSelectMenuBuilder()
-        .setCustomId(`aviso_channel_select_${interaction.user.id}`)
-        .setPlaceholder(isEnglish ? 'Select channels for the announcement' : 'Selecione os canais para o aviso')
-        .setMinValues(1)
-        .setMaxValues(10) // Permite selecionar até 10 canais
-        .addOptions(
-            interaction.guild.channels.cache
-                .filter(channel => [ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type) && channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages))
-                .map(channel =>
-                    new StringSelectMenuOptionBuilder()
-                        .setLabel(channel.name)
-                        .setValue(channel.id)
-                )
-        );
+    // Armazena o ID do canal selecionado nos dados temporários.
+    client.tempAvisoData.set(interaction.user.id, { channels: [channel.id] });
 
-    const actionRow = new ActionRowBuilder().addComponents(channelSelect);
+    // Mostra o modal (pop-up) para o título e corpo do aviso imediatamente.
+    const modal = new ModalBuilder()
+        .setCustomId(`aviso_modal_${interaction.user.id}_${isEnglish ? 'en' : 'pt'}`)
+        .setTitle(isEnglish ? 'Create New Announcement' : 'Criar Novo Aviso');
 
-    await interaction.editReply({
-        content: isEnglish ? 'Please select the channels where the announcement will be sent:' : 'Por favor, selecione os canais onde o aviso será enviado:',
-        components: [actionRow],
-        flags: [MessageFlags.Ephemeral]
-    });
+    const tituloInput = new TextInputBuilder()
+        .setCustomId('aviso_titulo')
+        .setLabel(isEnglish ? 'Announcement Title' : 'Título do Aviso')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-    // Aguarda a seleção do canal pelo usuário
-    const filter = i => i.customId === `aviso_channel_select_${interaction.user.id}` && i.user.id === interaction.user.id;
-    try {
-        const response = await interaction.channel.awaitMessageComponent({ filter, componentType: ComponentType.StringSelect, time: 60000 });
+    const corpoInput = new TextInputBuilder()
+        .setCustomId('aviso_corpo')
+        .setLabel(isEnglish ? 'Announcement Body' : 'Corpo do Aviso')
+        .setStyle(TextInputStyle.Paragraph)
+        .setRequired(true);
 
-        const selectedChannels = response.values;
-        client.tempAvisoData.set(interaction.user.id, { channels: selectedChannels });
-
-        // Agora, mostre o modal para o título e corpo do aviso
-        const modal = new ModalBuilder()
-            .setCustomId(`aviso_modal_${interaction.user.id}_${isEnglish ? 'en' : 'pt'}`)
-            .setTitle(isEnglish ? 'Create New Announcement' : 'Criar Novo Aviso');
-
-        const tituloInput = new TextInputBuilder()
-            .setCustomId('aviso_titulo')
-            .setLabel(isEnglish ? 'Announcement Title' : 'Título do Aviso')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true);
-
-        const corpoInput = new TextInputBuilder()
-            .setCustomId('aviso_corpo')
-            .setLabel(isEnglish ? 'Announcement Body' : 'Corpo do Aviso')
-            .setStyle(TextInputStyle.Paragraph)
-            .setRequired(true);
-
-        modal.addComponents(new ActionRowBuilder().addComponents(tituloInput), new ActionRowBuilder().addComponents(corpoInput));
-
-        await response.showModal(modal); // Mostra o modal na interação de seleção
-        // A resposta final para o usuário será tratada no modalSubmit
-    } catch (error) {
-        console.error('Erro ou tempo limite na seleção de canais para aviso:', error);
-        await interaction.editReply({ content: isEnglish ? '❌ Channel selection timed out or an error occurred.' : '❌ Seleção de canais expirou ou ocorreu um erro.', components: [], flags: [MessageFlags.Ephemeral] });
-        client.tempAvisoData.delete(interaction.user.id); // Limpa os dados temporários
-    }
+    modal.addComponents(new ActionRowBuilder().addComponents(tituloInput), new ActionRowBuilder().addComponents(corpoInput));
+    await interaction.showModal(modal);
 }
 
 
@@ -838,11 +917,53 @@ async function handlePedidoModalFinal(interaction, platform, onlineStatus, isEng
     );
 
     // Mostra o modal
-    await interaction.showModal(modal);
+    await interaction.showModal(modal); // O interaction.update anterior já lidou com a resposta ao clique do botão
 
     // A interação com o modal (submit) será tratada na parte isModalSubmit
 }
 
+// --- FUNÇÃO PARA FINALIZAR O CHAT E GERAR BACKUP ---
+async function handleEndChat(interaction, threadId, userId) {
+    try {
+        const thread = await client.channels.fetch(threadId);
+        // Se a thread não for encontrada, ela pode já ter sido deletada.
+        // Apenas logamos e saímos, pois não há mais o que fazer.
+        if (!thread) return console.log(`Tentativa de finalizar chat em thread não encontrada: ${threadId}`);
+
+        // 1. Gerar backup (transcript)
+        const messages = await thread.messages.fetch({ limit: 100 });
+        const transcript = messages.reverse().map(m => `[${new Date(m.createdTimestamp).toLocaleString('pt-BR')}] ${m.author.tag}: ${m.content}`).join('\n');
+        const transcriptFile = Buffer.from(transcript, 'utf-8');
+
+        // 2. Enviar o backup no canal de logs (ou no próprio canal da thread antes de fechar)
+        const logChannelId = config.logChannelId; // Pega o canal de logs da config
+        const logChannel = await client.channels.fetch(logChannelId);
+        if (logChannel) {
+            await logChannel.send({
+                content: `Backup da conversa com ${interaction.user.tag} (ID: ${userId})`,
+                files: [{ attachment: transcriptFile, name: `chat-backup-${userId}.txt` }]
+            });
+        }
+
+        // 3. Enviar mensagem de encerramento para o usuário
+        const user = await client.users.fetch(userId);
+        await user.send('Esta conversa foi finalizada por um administrador. Obrigado!');
+
+        // 4. Limpar a sessão e arquivar a thread
+        client.ticketSessions.delete(userId);
+        client.ticketSessions.delete(threadId);
+
+        await thread.setArchived(true);
+        await thread.setLocked(true);
+
+        // Usamos followUp porque a resposta já foi deferida. É mais seguro que editReply.
+        await interaction.followUp({ content: '✅ Chat finalizado, backup salvo e thread arquivada.', ephemeral: true });
+    } catch (error) {
+        console.error('Erro ao finalizar o chat:', error);
+        // Se um erro ocorrer, tentamos notificar o admin via followUp.
+        await interaction.followUp({ content: '✅ Chat finalizado, backup salvo e thread arquivada.', ephemeral: true }).catch(e => console.error("Falha ao enviar mensagem de erro no followUp:", e));
+    }
+}
 
 // *** FUNÇÃO AUXILIAR PARA ADDJOGO/ADDSOFT (GRANDES MUDANÇAS AQUI) ***
 async function sendGameOrSoftwareEmbed(originalInteraction, primaryChannelId, notificationChannelId, title, obs, link, imageUrl, type) {
