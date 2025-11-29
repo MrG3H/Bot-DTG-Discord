@@ -747,6 +747,7 @@ async function sendPedidoInitialEphemeralMessage(interaction, isEnglish) {
 function getPedidoPlatformSelectMenu(userId, lang, selectedValue = null) {
     const isEnglish = lang === 'en';
     const options = [
+        new StringSelectMenuOptionBuilder().setLabel(isEnglish ? 'Others (Software)' : 'Outros (Software)').setValue('Outros_Software'),
         new StringSelectMenuOptionBuilder().setLabel('PC').setValue('PC'),
         new StringSelectMenuOptionBuilder().setLabel('PS1').setValue('PS1'),
         new StringSelectMenuOptionBuilder().setLabel('PS2').setValue('PS2'),
@@ -761,7 +762,6 @@ function getPedidoPlatformSelectMenu(userId, lang, selectedValue = null) {
         new StringSelectMenuOptionBuilder().setLabel('Nintendo Switch').setValue('Nintendo_Switch'),
         new StringSelectMenuOptionBuilder().setLabel('Nintendo 3DS').setValue('Nintendo_3DS'),
         new StringSelectMenuOptionBuilder().setLabel('Outros (Emulador)').setValue('Outros_Emulador'),
-        new StringSelectMenuOptionBuilder().setLabel(isEnglish ? 'Others (Software)' : 'Outros (Software)').setValue('Outros_Software'),
     ];
 
     if (selectedValue) {
