@@ -1,4 +1,4 @@
-// BY: MrGeH - Versão Final (Correção do Loop, Imagem e Interação de Usuário)
+// BY: MrGeH - Versão Final
 
 require('dotenv').config();
 const fs = require('fs');
@@ -9,7 +9,7 @@ const {
     TextInputBuilder, TextInputStyle, ActionRowBuilder, Collection,
     PermissionFlagsBits, MessageFlags, StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder, ButtonBuilder, ButtonStyle, ComponentType,
-    ChannelType // Adicionado ChannelType para as verificações
+    ChannelType
 } = require('discord.js');
 
 const { translate } = require('@vitalets/google-translate-api');
@@ -860,7 +860,7 @@ async function sendGameOrSoftwareEmbed(originalInteraction, primaryChannelId, no
     }
 
     // --- 1. POSTAGEM PRINCIPAL (no canal_principal) como na Imagem 1 ---
-    let mainContent = `**${title}**\n\nLink: [Clique Aqui!](${link})`;
+    let mainContent = `**${title}**\n\n**Link:** [Clique Aqui! | Click Here!](${link})`;
     if (obs) {
         mainContent += `\n\nObservação: ${obs}`;
     }
