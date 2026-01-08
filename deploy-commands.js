@@ -12,7 +12,7 @@ if (!TOKEN || !CLIENT_ID) {
     process.exit(1);
 }
 
-// Definição dos seus comandos de barra (copie esta parte do seu index.js)
+// Definição dos comandos de barra 
 const commands = [
     new SlashCommandBuilder()
         .setName('dtg')
@@ -125,7 +125,6 @@ const rest = new REST({ version: '9' }).setToken(TOKEN);
 
 
         // === ETAPA DE REGISTRO ===
-        // Agora, registre os comandos apenas onde você realmente quer (na guilda, se GUILD_ID definido, senão globalmente)
         if (GUILD_ID) {
             console.log(`Registrando novos comandos de barra na guilda ${GUILD_ID}...`);
             await rest.put(
