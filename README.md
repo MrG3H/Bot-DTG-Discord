@@ -68,5 +68,5 @@ Este projeto foi construído com **Node.js** e utiliza as seguintes bibliotecas 
 
 ---
 <div align="center">
-  Feito com ❤️ por <a href="https://github.com/MrG3H">MrG3H</a>
+  Feito com ❤️ por <a href="https://github.com/MrGeeH">MrG3H</a>
 </div>
