@@ -5,18 +5,18 @@ const { SlashCommandBuilder, ChannelType } = require('discord.js');
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const GUILD_ID = process.env.GUILD_ID; // O ID da sua guilda de testes (opcional, mas recomendado)
+const GUILD_ID = process.env.GUILD_ID;
 
 if (!TOKEN || !CLIENT_ID) {
     console.error("Erro: As variáveis DISCORD_TOKEN e DISCORD_CLIENT_ID precisam ser definidas no arquivo .env");
     process.exit(1);
 }
 
-// Definição dos comandos de barra 
 const commands = [
     new SlashCommandBuilder()
         .setName('dtg')
         .setDescription('Comandos DownTorrentsGames.')
+        // --- COMANDOS PÚBLICOS ---
         .addSubcommand(subcommand =>
             subcommand.setName('ajuda')
                 .setDescription('Exibe a lista de comandos disponíveis.')
@@ -33,15 +33,39 @@ const commands = [
             subcommand.setName('order')
                 .setDescription('🇺🇸 Opens a form to request a game or software.')
         )
+        // --- COMANDOS ADMINISTRATIVOS (OWNER) ---
+        .addSubcommand(subcommand =>
+            subcommand.setName('chat')
+                .setDescription('(Owner) Abre um chat manual com um usuário específico.')
+                .addUserOption(option => 
+                    option.setName('usuario')
+                        .setDescription('O usuário com quem você quer abrir o chat.')
+                        .setRequired(true)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand.setName('config_boasvindas')
+                .setDescription('(Owner) Define em qual canal as mensagens de boas-vindas aparecerão.')
+                .addChannelOption(option =>
+                    option.setName('canal')
+                        .setDescription('Selecione o canal de entrada.')
+                        .setRequired(true)
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+                )
+        )
         .addSubcommand(subcommand =>
             subcommand.setName('aviso')
                 .setDescription('(Owner) Inicia o processo de criação de um novo aviso.')
                 .addChannelOption(option =>
                     option.setName('canal')
-                        .setDescription('O canal onde o aviso será publicado.')
-                        .setRequired(true)
+                        .setDescription('O canal onde o aviso será publicado (Opcional).')
+                        .setRequired(false)
                         .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement) 
                 )
+        )
+        .addSubcommand(subcommand =>
+            subcommand.setName('setup_faq')
+                .setDescription('(Owner) Cria o menu fixo de Dúvidas Frequentes (FAQ).')
         )
         .addSubcommand(subcommand =>
             subcommand.setName('addsoft')
@@ -78,6 +102,11 @@ const commands = [
         .addSubcommand(subcommand =>
             subcommand.setName('limpar')
                 .setDescription('(Owner) Limpa mensagens no canal atual.')
+                .addIntegerOption(option =>
+                    option.setName('quantidade')
+                        .setDescription('Número de mensagens para apagar (1 a 100).')
+                        .setRequired(true)
+                )
         )
         .addSubcommand(subcommand =>
             subcommand.setName('addpedido')
@@ -97,54 +126,25 @@ const commands = [
         ),
 ].map(command => command.toJSON());
 
-
 const rest = new REST({ version: '9' }).setToken(TOKEN);
 
 (async () => {
     try {
         console.log('Iniciando o processo de limpeza e registro de comandos...');
+        // Limpa comandos globais e de guilda para evitar duplicatas
+        await rest.put(Routes.applicationCommands(CLIENT_ID), { body: [] });
+        if (GUILD_ID) await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: [] });
 
-        // === ETAPA DE LIMPEZA ===
-        // 1. Tentar limpar comandos globais (caso algum tenha sido registrado globalmente por engano)
-        console.log('Tentando limpar comandos de barra globais existentes...');
-        await rest.put(
-            Routes.applicationCommands(CLIENT_ID),
-            { body: [] },
-        );
-        console.log('Comandos de barra globais limpos (se houver).');
-
-        // 2. Se GUILD_ID estiver definido, tentar limpar comandos da guilda
         if (GUILD_ID) {
-            console.log(`Tentando limpar comandos de barra existentes na guilda ${GUILD_ID}...`);
-            await rest.put(
-                Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-                { body: [] },
-            );
-            console.log(`Comandos de barra limpos na guilda ${GUILD_ID} (se houver).`);
-        }
-
-
-        // === ETAPA DE REGISTRO ===
-        if (GUILD_ID) {
-            console.log(`Registrando novos comandos de barra na guilda ${GUILD_ID}...`);
-            await rest.put(
-                Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-                { body: commands },
-            );
-            console.log(`Comandos de barra registrados com sucesso na guilda ${GUILD_ID}.`);
-            console.log('Verifique no Discord em alguns segundos.');
+            console.log(`Registrando na guilda ${GUILD_ID}...`);
+            await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), { body: commands });
+            console.log('Sucesso (Guilda)!');
         } else {
-            console.warn('AVISO: GUILD_ID NÃO está definido no .env. Comandos serão registrados GLOBALMENTE. Isso pode levar até 1 hora para propagar em todos os servidores.');
-            console.log('Registrando novos comandos de barra globalmente...');
-            await rest.put(
-                Routes.applicationCommands(CLIENT_ID),
-                { body: commands },
-            );
-            console.log('Comandos de barra registrados globalmente com sucesso.');
-            console.log('Aguarde até 1 hora para que os comandos apareçam em todos os servidores.');
+            console.warn('Registrando GLOBALMENTE (pode demorar 1h).');
+            await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
+            console.log('Sucesso (Global)!');
         }
-
     } catch (error) {
-        console.error('Erro ao limpar ou registrar comandos de barra:', error);
+        console.error('Erro:', error);
     }
 })();
