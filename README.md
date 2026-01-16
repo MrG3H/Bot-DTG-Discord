@@ -1,72 +1,122 @@
-# Bot DTG Discord (Bot-DTG-Discord)
+# Bot DTG Discord (Bot-DTG-Discord) 🏴‍☠️
 
-Este é um bot multifuncional para Discord, focado em gerenciamento de comunidade. Ele é projetado para automatizar a publicação de jogos e softwares, gerenciar um sistema de anúncios e processar pedidos de usuários de forma eficiente.
+Este é um bot robusto e multifuncional para Discord, desenvolvido especificamente para a comunidade **DownTorrentsGames**. Ele atua como o núcleo de gerenciamento do servidor, automatizando a publicação de jogos/softwares, gerenciando suporte, anúncios bilíngues e mantendo uma biblioteca pesquisável via Banco de Dados.
 
-Um dos seus principais recursos é a capacidade de tradução automática, quebrando barreiras de idioma dentro da comunidade.
+> **Versão Atual:** v30 (PostgreSQL Edition)
 
 ## ✨ Funcionalidades Principais
 
-* **Publicação de Conteúdo:** Comandos fáceis para administradores publicarem novos jogos e softwares no servidor, mantendo tudo organizado.
-* **Sistema de Anúncios:** Permite que a moderação crie e envie anúncios formatados para canais específicos.
-* **Tradução Automática (PT-BR -> EN):** Ao criar um anúncio em Português (PT-BR), o bot automaticamente gera e anexa uma versão em Inglês (EN), garantindo que a mensagem alcance todos os membros da comunidade.
-* **Sistema de Pedidos:** Um fluxo dedicado (provavelmente com modals/botões) para que os usuários possam fazer pedidos de jogos ou softwares de forma estruturada.
+### 📚 Biblioteca e Busca Inteligente
+* **Banco de Dados PostgreSQL:** Todos os jogos e softwares são salvos em um banco de dados robusto, garantindo segurança e performance.
+* **Busca Inteligente (`/dtg buscar`):** Usuários podem pesquisar jogos instantaneamente. O sistema gera **tags automáticas** (siglas, nomes limpos) para facilitar a localização (ex: buscar "gta" encontra "Grand Theft Auto").
+* **Importação de Histórico:** Scripts dedicados para ler o histórico do Discord e popular o banco de dados.
+
+### 🚨 Sistema de Reporte e Suporte
+* **Link Quebrado (`/dtg linkquebrado`):** Usuários reportam links off através de um formulário. A Staff recebe um painel organizado para corrigir.
+* **Feedback Automático:** Ao corrigir um link, o bot avisa o usuário no privado (DM) automaticamente em Português e Inglês.
+* **Chat Manual (`/dtg chat`):** A Staff pode abrir um canal de texto privado temporário com qualquer membro para suporte direto.
+
+### 🌐 Internacionalização
+* **Tradução Automática (PT-BR 🇧🇷 ↔️ EN 🇺🇸):**
+    * Anúncios e observações de jogos são traduzidos automaticamente.
+    * Modais e respostas detectam o idioma do Discord do usuário.
+
+### ⚙️ Automação e Moderação
+* **Boas-vindas Dinâmicas:** Recebe novos membros mostrando os 5 últimos lançamentos do banco de dados.
+* **Anti-Crash:** Sistema blindado contra quedas de conexão do banco de dados ou erros de rede.
+* **Auto-Moderação:** Bloqueio básico de links não autorizados e convites.
+
+---
 
 ## 🚀 Instalação e Configuração
 
-Para hospedar e rodar sua própria instância deste bot, siga os passos abaixo.
+### Pré-requisitos
+* **Node.js** (v16 ou superior)
+* **PostgreSQL** (Banco de dados local ou na nuvem, ex: Neon, Railway, AWS RDS)
+
+### Passo a Passo
 
 1.  **Clone o repositório:**
     ```bash
-    git clone https://github.com/MrG3H/Bot-DTG-Discord.git
+    git clone [https://github.com/MrG3H/Bot-DTG-Discord.git](https://github.com/MrG3H/Bot-DTG-Discord.git)
     cd Bot-DTG-Discord
     ```
 
 2.  **Instale as dependências:**
-    * `[npm install]`
-
-3.  **Configure as variáveis de ambiente:**
-    Crie um arquivo `.env` na raiz do projeto e adicione suas chaves de API:
-    ```env
-    # Token do seu Bot no Portal de Desenvolvedores do Discord
-    DISCORD_TOKEN=SEU_TOKEN_DO_BOT_AQUI
-
-    # ID do canal para onde os pedidos serão enviados
-    OWNER_ID=ID_DO_CANAL_AQUI
-    
-    # ID do canal de anúncios
-    DISCORD_CLIENT_ID=ID_DO_CANAL_AQUI
-
-    # NO GUILD ID VOCÊ DEVE ADICIONARO O ID DO SER SERVIDOR DISCORD
-    GUILD_ID=ID_DO_SEU_SERVER_DISCORD
+    ```bash
+    npm install
     ```
 
-4.  **Inicie o bot:**
-    * `[utilizando "node ." ou pode ser usado o "node index.js"]`
+3.  **Configure as variáveis de ambiente:**
+    Renomeie o arquivo `.env.example` para `.env` (ou crie um novo) e preencha:
 
-## 🎮 Comandos Principais
+    ```env
+    # Token do Bot (Discord Developer Portal)
+    DISCORD_TOKEN=SEU_TOKEN_AQUI
 
-Aqui estão alguns dos comandos que os usuários e administradores podem usar:
+    # ID do Usuário Dono (Para comandos administrativos)
+    OWNER_ID=SEU_ID_DE_USUARIO
 
-* `/dtg aviso ` - Cria um novo anúncio. O bot traduz e envia em PT-BR e EN.
-* `/dtg addpedido` - Abre um formulário para o usuário fazer um novo pedido de jogo ou software.
-* `/dtg addjogo` - Adiciona um novo jogo ao catálogo do servidor com aviso automatico em anuncio configurado manualmente..
-* `/dtg addsoft` - Adiciona um novo software ao catálogo do servidor com aviso automatico em anuncio configurado manualmente..
-* `/dtg ajuda` - Mostra todos os comandos disponíveis no bot DTG
-* `/dtg limpar` - Limpeza do chat onde ele vai perguntar a quantidade de dia semanas meses ou tudo
-* `/dtg convite` - Mostra um convite automatico do server.
+    # ID da Aplicação (Client ID)
+    DISCORD_CLIENT_ID=SEU_CLIENT_ID
+
+    # ID do Servidor (Guild ID) - Opcional se for registrar globalmente
+    GUILD_ID=ID_DO_SEU_SERVER
+
+    # URL de Conexão do PostgreSQL
+    DATABASE_URL=postgres://usuario:senha@host:porta/nome_banco
+    ```
+
+4.  **Registre os comandos (Slash Commands):**
+    ```bash
+    node deploy-commands.js
+    ```
+
+5.  **Inicie o bot:**
+    ```bash
+    node index.js
+    ```
+
+---
+
+## 🎮 Lista de Comandos (/dtg)
+
+### 🌍 Comandos Públicos (Para Membros)
+| Comando | Descrição |
+| :--- | :--- |
+| `/dtg buscar [nome]` | 🔍 Pesquisa um jogo ou software na biblioteca do banco de dados. |
+| `/dtg linkquebrado` | ⚠️ Abre um formulário para reportar links offline. |
+| `/dtg pedido` | 🇧🇷 Abre formulário para pedir jogos (PT-BR). |
+| `/dtg order` | 🇺🇸 Abre formulário para pedir jogos (EN). |
+| `/dtg convite` | 📩 Gera o convite oficial da comunidade. |
+| `/dtg ajuda` | ❓ Mostra informações de ajuda. |
+
+### 🛡️ Comandos Administrativos (Apenas Owner)
+| Comando | Descrição |
+| :--- | :--- |
+| `/dtg addjogo` | Adiciona um jogo ao banco de dados e publica no canal. |
+| `/dtg addsoft` | Adiciona um software ao banco de dados e publica no canal. |
+| `/dtg aviso` | Cria um anúncio com tradução automática e envia para um canal. |
+| `/dtg chat [usuario]` | Cria um canal de texto privado com um usuário específico. |
+| `/dtg configquebrado` | Define o canal onde os reports de links quebrados chegarão. |
+| `/dtg config_boasvindas`| Define o canal de boas-vindas. |
+| `/dtg addpedido` | Configura o painel fixo de pedidos. |
+| `/dtg setup_faq` | Cria o menu fixo de Dúvidas Frequentes (FAQ). |
+| `/dtg limpar [qtd]` | Limpa mensagens do chat. |
+
+---
 
 ## 💻 Tecnologias Utilizadas
 
-Este projeto foi construído com **Node.js** e utiliza as seguintes bibliotecas principais:
-
-* **[Discord.js v14](https://discord.js.org/)**: A principal biblioteca para interagir com a API do Discord.
-* **[@vitalets/google-translate-api](https://github.com/vitalets/google-translate-api)**: A biblioteca responsável pela funcionalidade de tradução automática (PT-BR -> EN).
-* **[Dotenv](https://github.com/motdotla/dotenv)**: Para carregar variáveis de ambiente (como tokens e IDs) de um arquivo `.env` de forma segura.
-* **[Node-Fetch v2](https://github.com/node-fetch/node-fetch)**: Uma biblioteca para fazer requisições HTTP, necessária para a API de tradução funcionar corretamente no Node.js.
-* **[@discordjs/builders](https://discord.js.org/#/docs/builders/main/general/welcome)**: Para construir facilmente os comandos (slash commands), embeds e outros componentes da API.
-* **[@discordjs/rest](https://discord.js.org/#/docs/rest/main/general/welcome)**: Usado para registrar os comandos (slash commands) do bot na API do Discord.
+* **[Node.js](https://nodejs.org/)**: Ambiente de execução.
+* **[Discord.js v14](https://discord.js.org/)**: Interação com a API do Discord.
+* **[PostgreSQL (pg)](https://node-postgres.com/)**: Banco de dados relacional para armazenamento de jogos e logs.
+* **[@vitalets/google-translate-api](https://github.com/vitalets/google-translate-api)**: Tradução automática de conteúdo.
+* **[Dotenv](https://github.com/motdotla/dotenv)**: Gerenciamento de variáveis de ambiente.
 
 ---
+
 <div align="center">
-  Feito com ❤️ por <a href="https://github.com/MrGeeH">MrG3H</a>
+  <b>Bot Privado desenvolvido para a comunidade DownTorrentsGames</b><br>
+  Feito com ❤️ e Código por <a href="https://github.com/MrGeeH">MrGeeH</a>
 </div>
