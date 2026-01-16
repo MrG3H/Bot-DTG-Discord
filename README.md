@@ -1,4 +1,4 @@
-# Bot DTG Discord (Bot-DTG-Discord) 🏴‍☠️
+# Bot DownTorrents Games Discord 🏴‍☠️
 
 Este é um bot robusto e multifuncional para Discord, desenvolvido especificamente para a comunidade **DownTorrentsGames**. Ele atua como o núcleo de gerenciamento do servidor, automatizando a publicação de jogos/softwares, gerenciando suporte, anúncios bilíngues e mantendo uma biblioteca pesquisável via Banco de Dados.
 
