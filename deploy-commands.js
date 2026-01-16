@@ -26,6 +26,20 @@ const commands = [
                 .setDescription('Gera um convite para o servidor DownTorrentsGames.')
         )
         .addSubcommand(subcommand =>
+            subcommand.setName('buscar')
+                .setDescription('🔍 Pesquisa um jogo ou software na biblioteca.')
+                .addStringOption(option =>
+                    option.setName('nome')
+                        .setDescription('Nome do jogo ou software para pesquisar.')
+                        .setRequired(true)
+                )
+        )
+        // NOVO: REPORTAR LINK QUEBRADO (PÚBLICO)
+        .addSubcommand(subcommand =>
+            subcommand.setName('linkquebrado')
+                .setDescription('⚠️ Reporta um link quebrado de um jogo ou software.')
+        )
+        .addSubcommand(subcommand =>
             subcommand.setName('pedido')
                 .setDescription('🇧🇷 Abre um formulário para solicitar um jogo ou software.')
         )
@@ -41,6 +55,17 @@ const commands = [
                     option.setName('usuario')
                         .setDescription('O usuário com quem você quer abrir o chat.')
                         .setRequired(true)
+                )
+        )
+        // NOVO: CONFIGURAR CANAL DE REPORTES (OWNER)
+        .addSubcommand(subcommand =>
+            subcommand.setName('configquebrado')
+                .setDescription('(Owner) Define o canal onde os reports de links quebrados serão enviados.')
+                .addChannelOption(option =>
+                    option.setName('canal')
+                        .setDescription('O canal de texto para os logs de erro.')
+                        .setRequired(true)
+                        .addChannelTypes(ChannelType.GuildText)
                 )
         )
         .addSubcommand(subcommand =>
