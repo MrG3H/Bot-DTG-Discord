@@ -38,7 +38,7 @@ Este é um bot robusto e multifuncional para Discord, desenvolvido especificamen
 
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/MrG3H/Bot-DTG-Discord.git](https://github.com/MrG3H/Bot-DTG-Discord.git)
+    git clone https://github.com/MrG3H/Bot-DTG-Discord.git
     cd Bot-DTG-Discord
     ```
 
